@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">PasaporteApp</string>
+    <string name="titulo_lista_paises">Explorar países</string>
+    <string name="nav_inicio">Inicio</string>
+    <string name="nav_pasaporte">Mi pasaporte</string>
+    <string name="nav_quiz">Quiz de banderas</string>
+    <string name="nav_ajustes">Ajustes</string>
+
+    <string name="buscar_pais">Buscar país</string>
+
+    <string name="region_todas">Todas</string>
+    <string name="region_africa">Africa</string>
+    <string name="region_americas">Americas</string>
+    <string name="region_asia">Asia</string>
+    <string name="region_europe">Europe</string>
+    <string name="region_oceania">Oceania</string>
+
+    <string name="descripcion_bandera">Bandera del país</string>
+    <string name="descripcion_visitado">Estado en el pasaporte</string>
+
+    <string name="no_capital">Sin capital</string>
+    <string name="error_loading_countries">Error al cargar los países. Revisa tu conexión.</string>
+</resources>
