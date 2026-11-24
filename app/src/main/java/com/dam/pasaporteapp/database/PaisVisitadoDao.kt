@@ -5,6 +5,8 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
+import androidx.room.Update
 
 @Dao
 interface PaisVisitadoDao {
@@ -17,4 +19,10 @@ interface PaisVisitadoDao {
 
     @Delete
     suspend fun eliminar(pais: PaisVisitado)
+
+    @Query("SELECT * FROM visited_country_table ORDER BY name COLLATE NOCASE")
+    fun observarVisitados(): Flow<List<PaisVisitado>>
+
+    @Update
+    suspend fun actualizar(pais: PaisVisitado)
 }

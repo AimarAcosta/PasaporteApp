@@ -2,4 +2,9 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="visita_icono_guardado">#694500</color>
+    <color name="visita_fondo_guardado">#FFE08A</color>
+    <color name="visita_icono_no_guardado">#434B57</color>
+    <color name="visita_fondo_no_guardado">#E8EBF0</color>
 </resources>

@@ -18,6 +18,7 @@ import androidx.appcompat.widget.SearchView
 import com.dam.pasaporteapp.model.Pais
 import android.content.Intent
 import com.dam.pasaporteapp.ui.DetallePaisActivity
+import com.dam.pasaporteapp.ui.PasaporteActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnPasaporte.setOnClickListener {
-            Toast.makeText(this, R.string.nav_pasaporte, Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, PasaporteActivity::class.java))
         }
 
         binding.btnQuiz.setOnClickListener {

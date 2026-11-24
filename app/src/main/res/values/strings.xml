@@ -44,4 +44,18 @@
     <string name="pais_guardado">País añadido al pasaporte</string>
     <string name="pais_eliminado">País quitado del pasaporte</string>
     <string name="error_cambiar_visita">No se ha podido actualizar el pasaporte.</string>
+
+    <string name="pasaporte_vacio">Todavía no has añadido ningún país al pasaporte.</string>
+
+    <plurals name="pasaporte_resumen">
+        <item quantity="one">Has visitado %d país</item>
+        <item quantity="other">Has visitado %d países</item>
+    </plurals>
+
+    <string name="pasaporte_sin_nota">Sin nota</string>
+    <string name="pasaporte_editar_nota">Editar nota</string>
+    <string name="pasaporte_quitar_pais">Quitar</string>
+    <string name="pasaporte_nota_hint">Escribe una nota del viaje</string>
+    <string name="pasaporte_guardar_nota">Guardar</string>
+    <string name="pasaporte_cancelar_nota">Cancelar</string>
 </resources>

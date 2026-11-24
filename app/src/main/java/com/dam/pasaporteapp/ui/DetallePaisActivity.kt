@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
+import android.content.res.ColorStateList
 
 class DetallePaisActivity : AppCompatActivity() {
 
@@ -117,14 +118,30 @@ class DetallePaisActivity : AppCompatActivity() {
             android.R.drawable.star_big_off
         }
 
+        val colorIcono = if (visitado) {
+            R.color.visita_icono_guardado
+        } else {
+            R.color.visita_icono_no_guardado
+        }
+
+        val colorFondo = if (visitado) {
+            R.color.visita_fondo_guardado
+        } else {
+            R.color.visita_fondo_no_guardado
+        }
+
         val descripcion = if (visitado) {
             R.string.desmarcar_visitado
         } else {
             R.string.marcar_visitado
         }
 
-        binding.fabVisitado.setImageResource(icono)
-        binding.fabVisitado.contentDescription = getString(descripcion)
+        binding.fabVisitado.apply {
+            setImageResource(icono)
+            imageTintList = ColorStateList.valueOf(getColor(colorIcono))
+            backgroundTintList = ColorStateList.valueOf(getColor(colorFondo))
+            contentDescription = getString(descripcion)
+        }
     }
 
     private fun mostrarDetalle(pais: CountryDetailResponse) {

@@ -26,6 +26,9 @@
         <activity
             android:name=".ui.DetallePaisActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.PasaporteActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

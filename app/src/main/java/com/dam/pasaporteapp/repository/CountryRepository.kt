@@ -11,6 +11,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.dam.pasaporteapp.database.PaisVisitado
 import com.dam.pasaporteapp.database.PasaporteDatabase
+import kotlinx.coroutines.flow.Flow
 
 class CountryRepository(contexto: Context) {
 
@@ -70,5 +71,17 @@ class CountryRepository(contexto: Context) {
             region = region.orEmpty(),
             flagUrl = flags?.png.orEmpty()
         )
+    }
+
+    fun observarVisitados(): Flow<List<PaisVisitado>> {
+        return paisVisitadoDao.observarVisitados()
+    }
+
+    suspend fun guardarNota(pais: PaisVisitado, nota: String) {
+        paisVisitadoDao.actualizar(pais.copy(note = nota.trim()))
+    }
+
+    suspend fun eliminarVisitado(pais: PaisVisitado) {
+        paisVisitadoDao.eliminar(pais)
     }
 }
