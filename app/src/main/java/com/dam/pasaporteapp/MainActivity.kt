@@ -14,12 +14,18 @@ import com.dam.pasaporteapp.databinding.ActivityMainBinding
 import com.dam.pasaporteapp.repository.CountryRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.appcompat.widget.SearchView
+import com.dam.pasaporteapp.model.Pais
+import android.content.Intent
+import com.dam.pasaporteapp.ui.DetallePaisActivity
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var paisAdapter: PaisAdapter
-    private val countryRepository = CountryRepository()
+    private val countryRepository by lazy { CountryRepository(applicationContext) }
+
+    private var todosLosPaises: List<Pais>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         initListeners()
         initRecyclerView()
+        initFiltros()
         cargarPaises()
     }
 
@@ -60,15 +67,63 @@ class MainActivity : AppCompatActivity() {
 
     private fun initRecyclerView() {
         paisAdapter = PaisAdapter { pais ->
-            Toast.makeText(
-                this,
-                "Has pulsado ${pais.nombre}",
-                Toast.LENGTH_SHORT
-            ).show()
+            val intent = Intent(this, DetallePaisActivity::class.java)
+                .putExtra(DetallePaisActivity.EXTRA_CODE, pais.codigo)
+
+            startActivity(intent)
         }
 
         binding.rvPaises.layoutManager = GridLayoutManager(this, 2)
         binding.rvPaises.adapter = paisAdapter
+    }
+
+    private fun initFiltros() {
+        binding.searchPaises.setOnQueryTextListener(
+            object : SearchView.OnQueryTextListener {
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    aplicarFiltros()
+                    return true
+                }
+
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    binding.searchPaises.clearFocus()
+                    return true
+                }
+            }
+        )
+
+        binding.chipGroupRegiones.setOnCheckedStateChangeListener { _, _ ->
+            aplicarFiltros()
+        }
+    }
+
+    private fun aplicarFiltros() {
+        val paises = todosLosPaises ?: return
+        val busqueda = binding.searchPaises.query.toString().trim()
+
+        val regionSeleccionada = when (binding.chipGroupRegiones.checkedChipId) {
+            R.id.chipAfrica -> getString(R.string.region_africa)
+            R.id.chipAmericas -> getString(R.string.region_americas)
+            R.id.chipAsia -> getString(R.string.region_asia)
+            R.id.chipEurope -> getString(R.string.region_europe)
+            R.id.chipOceania -> getString(R.string.region_oceania)
+            else -> null
+        }
+
+        val paisesFiltrados = paises.filter { pais ->
+            val coincideNombre = pais.nombre.contains(busqueda, ignoreCase = true)
+            val coincideRegion = regionSeleccionada == null ||
+                    pais.region == regionSeleccionada
+
+            coincideNombre && coincideRegion
+        }
+
+        paisAdapter.actualizarPaises(paisesFiltrados)
+
+        if (paisesFiltrados.isEmpty()) {
+            Toast.makeText(this, R.string.sin_resultados_paises, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun cargarPaises() {
@@ -76,8 +131,8 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val paises = countryRepository.getAllCountries()
-                paisAdapter.actualizarPaises(paises)
+                todosLosPaises = countryRepository.getAllCountries()
+                aplicarFiltros()
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

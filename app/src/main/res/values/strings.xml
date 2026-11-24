@@ -20,4 +20,28 @@
 
     <string name="no_capital">Sin capital</string>
     <string name="error_loading_countries">Error al cargar los países. Revisa tu conexión.</string>
+
+    <string name="sin_resultados_paises">No hay países que coincidan con la búsqueda y la región.</string>
+
+    <string name="titulo_detalle_pais">Detalle del país</string>
+    <string name="detalle_codigo_pais">Código del país: %1$s</string>
+
+    <string name="detalle_sin_datos">Sin datos</string>
+    <string name="detalle_capital">Capital: %1$s</string>
+    <string name="detalle_region">Región: %1$s</string>
+    <string name="detalle_subregion">Subregión: %1$s</string>
+    <string name="detalle_poblacion">Población: %1$s</string>
+    <string name="detalle_superficie">Superficie: %1$s</string>
+    <string name="detalle_idiomas">Idiomas: %1$s</string>
+    <string name="detalle_monedas">Monedas: %1$s</string>
+    <string name="detalle_habitantes">%1$s hab.</string>
+    <string name="detalle_km2">%1$s km²</string>
+    <string name="detalle_moneda_con_simbolo">%1$s (%2$s)</string>
+    <string name="error_cargar_detalle">No se ha podido cargar el país. Comprueba la conexión.</string>
+
+    <string name="marcar_visitado">Añadir al pasaporte</string>
+    <string name="desmarcar_visitado">Quitar del pasaporte</string>
+    <string name="pais_guardado">País añadido al pasaporte</string>
+    <string name="pais_eliminado">País quitado del pasaporte</string>
+    <string name="error_cambiar_visita">No se ha podido actualizar el pasaporte.</string>
 </resources>

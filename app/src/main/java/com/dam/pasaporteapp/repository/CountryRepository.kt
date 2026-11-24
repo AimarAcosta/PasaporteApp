@@ -6,8 +6,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
+import com.dam.pasaporteapp.model.CountryDetailResponse
+import android.content.Context
+import androidx.room.withTransaction
+import com.dam.pasaporteapp.database.PaisVisitado
+import com.dam.pasaporteapp.database.PasaporteDatabase
 
-class CountryRepository {
+class CountryRepository(contexto: Context) {
+
+    private val baseDeDatos = PasaporteDatabase.obtenerInstancia(contexto)
+    private val paisVisitadoDao = baseDeDatos.paisVisitadoDao()
 
     suspend fun getAllCountries(): List<Pais> = withContext(Dispatchers.IO) {
         val respuesta = RetrofitHelper.apiService.getAllCountries()
@@ -28,5 +36,39 @@ class CountryRepository {
                 urlBandera = country.flags?.png
             )
         }.sortedBy { it.nombre.lowercase() }
+    }
+
+    suspend fun getCountryByCode(codigo: String): CountryDetailResponse =
+        withContext(Dispatchers.IO) {
+            RetrofitHelper.apiService.getCountryByCode(codigo)
+        }
+
+    suspend fun estaVisitado(codigo: String): Boolean {
+        return paisVisitadoDao.buscarPorCodigo(codigo) != null
+    }
+
+    suspend fun cambiarEstadoVisita(
+        codigo: String,
+        pais: CountryDetailResponse
+    ): Boolean = baseDeDatos.withTransaction {
+        val guardado = paisVisitadoDao.buscarPorCodigo(codigo)
+
+        if (guardado == null) {
+            paisVisitadoDao.insertar(pais.toEntity(codigo))
+            true
+        } else {
+            paisVisitadoDao.eliminar(guardado)
+            false
+        }
+    }
+
+    private fun CountryDetailResponse.toEntity(codigo: String): PaisVisitado {
+        return PaisVisitado(
+            code = codigo,
+            name = name,
+            capital = capital.orEmpty(),
+            region = region.orEmpty(),
+            flagUrl = flags?.png.orEmpty()
+        )
     }
 }
