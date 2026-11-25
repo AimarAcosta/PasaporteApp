@@ -19,6 +19,10 @@ import com.dam.pasaporteapp.model.Pais
 import android.content.Intent
 import com.dam.pasaporteapp.ui.DetallePaisActivity
 import com.dam.pasaporteapp.ui.PasaporteActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.flow.collect
+import com.dam.pasaporteapp.ui.QuizActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,6 +48,7 @@ class MainActivity : AppCompatActivity() {
 
         initListeners()
         initRecyclerView()
+        observarVisitados()
         initFiltros()
         cargarPaises()
     }
@@ -58,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnQuiz.setOnClickListener {
-            Toast.makeText(this, R.string.nav_quiz, Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, QuizActivity::class.java))
         }
 
         binding.btnAjustes.setOnClickListener {
@@ -124,6 +129,16 @@ class MainActivity : AppCompatActivity() {
 
         if (paisesFiltrados.isEmpty()) {
             Toast.makeText(this, R.string.sin_resultados_paises, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun observarVisitados() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                countryRepository.observarCodigosVisitados().collect { codigos ->
+                    paisAdapter.actualizarVisitados(codigos.toSet())
+                }
+            }
         }
     }
 

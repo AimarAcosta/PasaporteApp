@@ -1,0 +1,3124 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+app/
+  src/
+    androidTest/
+      java/
+        com/
+          dam/
+            pasaporteapp/
+              ExampleInstrumentedTest.kt
+    main/
+      java/
+        com/
+          dam/
+            pasaporteapp/
+              adapter/
+                PaisAdapter.kt
+                PasaporteAdapter.kt
+              database/
+                PaisVisitado.kt
+                PaisVisitadoDao.kt
+                PasaporteDatabase.kt
+              model/
+                CountryDetailResponse.kt
+                CountryResponse.kt
+                Pais.kt
+                PresupuestoViaje.kt
+              network/
+                CountryApiService.kt
+                RetrofitHelper.kt
+              repository/
+                CountryRepository.kt
+              ui/
+                DetallePaisActivity.kt
+                PasaporteActivity.kt
+                PlanificadorActivity.kt
+                ResultadoViajeActivity.kt
+              MainActivity.kt
+      keepRules/
+        rules.keep
+      res/
+        drawable/
+          ic_home.xml
+          ic_launcher_background.xml
+          ic_launcher_foreground.xml
+          ic_passport.xml
+          ic_quiz.xml
+          ic_settings.xml
+        layout/
+          activity_detalle_pais.xml
+          activity_main.xml
+          activity_pasaporte.xml
+          activity_planificador.xml
+          activity_resultado_viaje.xml
+          dialog_note.xml
+          item_pais.xml
+        mipmap-anydpi-v26/
+          ic_launcher_round.xml
+          ic_launcher.xml
+        mipmap-hdpi/
+          ic_launcher_round.webp
+          ic_launcher.webp
+        mipmap-mdpi/
+          ic_launcher_round.webp
+          ic_launcher.webp
+        mipmap-xhdpi/
+          ic_launcher_round.webp
+          ic_launcher.webp
+        mipmap-xxhdpi/
+          ic_launcher_round.webp
+          ic_launcher.webp
+        mipmap-xxxhdpi/
+          ic_launcher_round.webp
+          ic_launcher.webp
+        values/
+          colors.xml
+          strings.xml
+          themes.xml
+        values-night/
+          themes.xml
+        xml/
+          backup_rules.xml
+          data_extraction_rules.xml
+      AndroidManifest.xml
+    test/
+      java/
+        com/
+          dam/
+            pasaporteapp/
+              ExampleUnitTest.kt
+  .gitignore
+  build.gradle.kts
+gradle/
+  wrapper/
+    gradle-wrapper.jar
+    gradle-wrapper.properties
+  gradle-daemon-jvm.properties
+  libs.versions.toml
+.gitignore
+build.gradle.kts
+gradle.properties
+gradlew
+gradlew.bat
+README.md
+settings.gradle.kts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="app/src/main/java/com/dam/pasaporteapp/model/PresupuestoViaje.kt">
+package com.dam.pasaporteapp.model
+
+enum class EstiloViaje(val precioPorPersonaDia: Int) {
+    MOCHILERO(50),
+    ESTANDAR(100),
+    LUJO(250)
+}
+
+data class PresupuestoViaje(
+    val region: String,
+    val dias: Int,
+    val viajeros: Int,
+    val estilo: EstiloViaje,
+    val conSeguro: Boolean
+) {
+    val total: Double
+        get() {
+            val seguroPorDia = if (conSeguro) PRECIO_SEGURO else 0
+            val precioPorPersonaDia = estilo.precioPorPersonaDia + seguroPorDia
+
+            return dias * viajeros * precioPorPersonaDia * multiplicador(region)
+        }
+
+    companion object {
+        private const val PRECIO_SEGURO = 5
+
+        fun multiplicador(region: String): Double = when (region) {
+            "Africa" -> 0.8
+            "Asia" -> 0.9
+            "Europe" -> 1.2
+            "Oceania" -> 1.3
+            else -> 1.0
+        }
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/ui/PlanificadorActivity.kt">
+package com.dam.pasaporteapp.ui
+
+import android.content.Intent
+import android.os.Bundle
+import android.widget.SeekBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.dam.pasaporteapp.R
+import com.dam.pasaporteapp.databinding.ActivityPlanificadorBinding
+import com.dam.pasaporteapp.model.EstiloViaje
+import com.dam.pasaporteapp.model.PresupuestoViaje
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
+
+class PlanificadorActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityPlanificadorBinding
+    private val idiomaFormato = Locale.forLanguageTag("es-ES")
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val nombre = intent.getStringExtra(EXTRA_NOMBRE)
+        if (nombre.isNullOrBlank()) {
+            finish()
+            return
+        }
+
+        val region = intent.getStringExtra(EXTRA_REGION).orEmpty()
+
+        binding = ActivityPlanificadorBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { vista, insets ->
+            val barras = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            vista.setPadding(barras.left, barras.top, barras.right, barras.bottom)
+            insets
+        }
+
+        binding.tvTituloViaje.text = getString(R.string.planificador_titulo, nombre)
+        binding.tvRegionViaje.text = getString(
+            R.string.planificador_region,
+            region.ifBlank { getString(R.string.detalle_sin_datos) },
+            String.format(idiomaFormato, "%.1f", PresupuestoViaje.multiplicador(region))
+        )
+
+        configurarBarra(binding.seekDias, binding.tvDiasViaje, R.string.planificador_dias)
+        configurarBarra(
+            binding.seekViajeros,
+            binding.tvViajerosViaje,
+            R.string.planificador_viajeros
+        )
+
+        binding.btnCalcular.setOnClickListener {
+            calcularPresupuesto(nombre, region)
+        }
+    }
+
+    private fun configurarBarra(barra: SeekBar, texto: TextView, recurso: Int) {
+        texto.text = getString(recurso, barra.progress + 1)
+
+        barra.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(barra: SeekBar, progreso: Int, desdeUsuario: Boolean) {
+                texto.text = getString(recurso, progreso + 1)
+            }
+
+            override fun onStartTrackingTouch(barra: SeekBar) = Unit
+
+            override fun onStopTrackingTouch(barra: SeekBar) = Unit
+        })
+    }
+
+    private fun calcularPresupuesto(nombre: String, region: String) {
+        val estilo = when (binding.rgEstilo.checkedRadioButtonId) {
+            R.id.rbMochilero -> EstiloViaje.MOCHILERO
+            R.id.rbLujo -> EstiloViaje.LUJO
+            else -> EstiloViaje.ESTANDAR
+        }
+
+        val presupuesto = PresupuestoViaje(
+            region = region,
+            dias = binding.seekDias.progress + 1,
+            viajeros = binding.seekViajeros.progress + 1,
+            estilo = estilo,
+            conSeguro = binding.switchSeguro.isChecked
+        )
+
+        val intent = Intent(this, ResultadoViajeActivity::class.java)
+            .putExtra(EXTRA_NOMBRE, nombre)
+            .putExtra(EXTRA_REGION, presupuesto.region)
+            .putExtra(ResultadoViajeActivity.EXTRA_TOTAL, presupuesto.total)
+            .putExtra(ResultadoViajeActivity.EXTRA_DIAS, presupuesto.dias)
+            .putExtra(ResultadoViajeActivity.EXTRA_VIAJEROS, presupuesto.viajeros)
+            .putExtra(ResultadoViajeActivity.EXTRA_ESTILO, presupuesto.estilo.name)
+            .putExtra(ResultadoViajeActivity.EXTRA_SEGURO, presupuesto.conSeguro)
+
+        startActivity(intent)
+    }
+
+    companion object {
+        const val EXTRA_NOMBRE = "EXTRA_NOMBRE"
+        const val EXTRA_REGION = "EXTRA_REGION"
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/ui/ResultadoViajeActivity.kt">
+package com.dam.pasaporteapp.ui
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.dam.pasaporteapp.R
+import com.dam.pasaporteapp.databinding.ActivityResultadoViajeBinding
+import com.dam.pasaporteapp.model.EstiloViaje
+import com.dam.pasaporteapp.model.PresupuestoViaje
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
+
+class ResultadoViajeActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val nombre = intent.getStringExtra(PlanificadorActivity.EXTRA_NOMBRE)
+        val total = intent.getDoubleExtra(EXTRA_TOTAL, Double.NaN)
+
+        if (nombre.isNullOrBlank() || !total.isFinite()) {
+            finish()
+            return
+        }
+
+        val binding = ActivityResultadoViajeBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { vista, insets ->
+            val barras = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            vista.setPadding(barras.left, barras.top, barras.right, barras.bottom)
+            insets
+        }
+
+        val (categoria, color) = when {
+            total <= 1_000 -> R.string.resultado_economico to R.color.resultado_fondo_economico
+            total <= 3_000 -> R.string.resultado_moderado to R.color.resultado_fondo_moderado
+            else -> R.string.resultado_gran_viaje to R.color.resultado_fondo_gran_viaje
+        }
+
+        val idioma = Locale.forLanguageTag("es-ES")
+        val formatoEuros = DecimalFormat("#,##0.##", DecimalFormatSymbols(idioma))
+
+        binding.tvTituloResultado.text = getString(R.string.planificador_titulo, nombre)
+        binding.tvTotalResultado.text = getString(
+            R.string.planificador_total,
+            formatoEuros.format(total)
+        )
+        binding.tvCategoriaResultado.setText(categoria)
+        binding.panelResultado.setBackgroundColor(getColor(color))
+        binding.tvDesgloseResultado.text = crearDesglose(idioma)
+
+        binding.btnRecalcular.setOnClickListener {
+            finish()
+        }
+    }
+
+    private fun crearDesglose(idioma: Locale): String {
+        val region = intent.getStringExtra(PlanificadorActivity.EXTRA_REGION).orEmpty()
+        val dias = intent.getIntExtra(EXTRA_DIAS, 1)
+        val viajeros = intent.getIntExtra(EXTRA_VIAJEROS, 1)
+
+        val estilo = when (intent.getStringExtra(EXTRA_ESTILO)) {
+            EstiloViaje.MOCHILERO.name -> R.string.resultado_mochilero
+            EstiloViaje.LUJO.name -> R.string.resultado_lujo
+            else -> R.string.resultado_estandar
+        }
+
+        val seguro = if (intent.getBooleanExtra(EXTRA_SEGURO, false)) {
+            R.string.resultado_seguro_si
+        } else {
+            R.string.resultado_seguro_no
+        }
+
+        return listOf(
+            getString(R.string.planificador_dias, dias),
+            getString(R.string.planificador_viajeros, viajeros),
+            getString(R.string.resultado_estilo, getString(estilo)),
+            getString(R.string.resultado_seguro, getString(seguro)),
+            getString(
+                R.string.planificador_region,
+                region.ifBlank { getString(R.string.detalle_sin_datos) },
+                String.format(idioma, "%.1f", PresupuestoViaje.multiplicador(region))
+            )
+        ).joinToString("\n")
+    }
+
+    companion object {
+        const val EXTRA_TOTAL = "EXTRA_TOTAL"
+        const val EXTRA_DIAS = "EXTRA_DIAS"
+        const val EXTRA_VIAJEROS = "EXTRA_VIAJEROS"
+        const val EXTRA_ESTILO = "EXTRA_ESTILO"
+        const val EXTRA_SEGURO = "EXTRA_SEGURO"
+    }
+}
+</file>
+
+<file path="app/src/main/res/layout/activity_planificador.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvTituloViaje"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvRegionViaje"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tvDiasViaje"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:labelFor="@+id/seekDias" />
+
+        <SeekBar
+            android:id="@id/seekDias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="29" />
+
+        <TextView
+            android:id="@+id/tvViajerosViaje"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:labelFor="@+id/seekViajeros" />
+
+        <SeekBar
+            android:id="@id/seekViajeros"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="5" />
+
+        <RadioGroup
+            android:id="@+id/rgEstilo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/rbMochilero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/planificador_mochilero" />
+
+            <RadioButton
+                android:id="@+id/rbEstandar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/planificador_estandar" />
+
+            <RadioButton
+                android:id="@+id/rbLujo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/planificador_lujo" />
+
+        </RadioGroup>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchSeguro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/planificador_seguro" />
+
+        <Button
+            android:id="@+id/btnCalcular"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/planificador_calcular" />
+
+    </LinearLayout>
+</ScrollView>
+</file>
+
+<file path="app/src/main/res/layout/activity_resultado_viaje.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvTituloResultado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/panelResultado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvTotalResultado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/resultado_texto"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvCategoriaResultado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/resultado_texto"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvDesgloseResultado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:lineSpacingExtra="6dp"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btnRecalcular"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/resultado_recalcular" />
+
+    </LinearLayout>
+</ScrollView>
+</file>
+
+<file path="app/src/androidTest/java/com/dam/pasaporteapp/ExampleInstrumentedTest.kt">
+package com.dam.pasaporteapp
+
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
+
+import org.junit.Test
+import org.junit.runner.RunWith
+
+import org.junit.Assert.*
+
+/**
+ * Instrumented test, which will execute on an Android device.
+ *
+ * See [testing documentation](http://d.android.com/tools/testing).
+ */
+@RunWith(AndroidJUnit4::class)
+class ExampleInstrumentedTest {
+    @Test
+    fun useAppContext() {
+        // Context of the app under test.
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+        assertEquals("com.dam.pasaporteapp", appContext.packageName)
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/adapter/PaisAdapter.kt">
+package com.dam.pasaporteapp.adapter
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
+import com.dam.pasaporteapp.databinding.ItemPaisBinding
+import com.dam.pasaporteapp.model.Pais
+import com.bumptech.glide.Glide
+import com.dam.pasaporteapp.R
+
+class PaisAdapter(
+    private val onPaisClick: (Pais) -> Unit
+) : RecyclerView.Adapter<PaisAdapter.PaisViewHolder>() {
+
+    private var listaPaises: List<Pais> = emptyList()
+
+    fun actualizarPaises(paises: List<Pais>) {
+        listaPaises = paises
+        notifyDataSetChanged()
+    }
+
+    fun actualizarVisitados(nuevosCodigos: Set<String>) {
+        val codigosAnteriores = codigosVisitados
+        codigosVisitados = nuevosCodigos
+
+        listaPaises.forEachIndexed { posicion, pais ->
+            val estabaVisitado = pais.codigo in codigosAnteriores
+            val estaVisitado = pais.codigo in nuevosCodigos
+
+            if (estabaVisitado != estaVisitado) {
+                notifyItemChanged(posicion)
+            }
+        }
+    }
+
+    inner class PaisViewHolder(
+        private val binding: ItemPaisBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun mostrar(pais: Pais) {
+            binding.tvNombrePais.text = pais.nombre
+            binding.tvCapital.text = pais.capital
+                ?.takeIf { it.isNotBlank() }
+                ?: binding.root.context.getString(R.string.no_capital)
+            binding.tvRegion.text = pais.region.orEmpty()
+
+            Glide.with(binding.ivBandera)
+                .load(pais.urlBandera)
+                .placeholder(R.drawable.ic_quiz)
+                .fallback(R.drawable.ic_quiz)
+                .error(R.drawable.ic_quiz)
+                .into(binding.ivBandera)
+
+            val visitado = pais.codigo in codigosVisitados
+
+            val icono = if (visitado) {
+                android.R.drawable.star_big_on
+            } else {
+                android.R.drawable.star_big_off
+            }
+
+            val descripcion = if (visitado) {
+                R.string.estado_pais_visitado
+            } else {
+                R.string.estado_pais_no_visitado
+            }
+
+            binding.ivVisitado.setImageResource(icono)
+            binding.ivVisitado.contentDescription = binding.root.context.getString(descripcion)
+
+            binding.root.setOnClickListener {
+                onPaisClick(pais)
+            }
+        }
+    }
+
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): PaisViewHolder {
+        val binding = ItemPaisBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+
+        return PaisViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(
+        holder: PaisViewHolder,
+        position: Int
+    ) {
+        val pais = listaPaises[position]
+        holder.mostrar(pais)
+    }
+
+    private var codigosVisitados: Set<String> = emptySet()
+
+    override fun getItemCount(): Int {
+        return listaPaises.size
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/adapter/PasaporteAdapter.kt">
+package com.dam.pasaporteapp.adapter
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.dam.pasaporteapp.R
+import com.dam.pasaporteapp.database.PaisVisitado
+import com.dam.pasaporteapp.databinding.ItemPaisBinding
+import androidx.core.view.isVisible
+
+class PasaporteAdapter(
+    private val onPaisClick: (PaisVisitado) -> Unit,
+    private val onEditarNota: (PaisVisitado) -> Unit,
+    private val onQuitarPais: (PaisVisitado) -> Unit
+) : ListAdapter<PaisVisitado, PasaporteAdapter.VisitadoViewHolder>(DIFERENCIAS) {
+
+    class VisitadoViewHolder(
+        val binding: ItemPaisBinding
+    ) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): VisitadoViewHolder {
+        val binding = ItemPaisBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return VisitadoViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: VisitadoViewHolder, position: Int) {
+        val pais = getItem(position)
+        val binding = holder.binding
+
+        binding.tvNombrePais.text = pais.name
+        binding.tvCapital.text = pais.capital.ifBlank {
+            binding.root.context.getString(R.string.no_capital)
+        }
+        binding.tvRegion.text = pais.region
+        binding.ivVisitado.setImageResource(android.R.drawable.star_big_on)
+
+        binding.accionesPasaporte.isVisible = true
+        binding.tvNotaPasaporte.text = pais.note.ifBlank {
+            binding.root.context.getString(R.string.pasaporte_sin_nota)
+        }
+
+        binding.btnEditarNota.setOnClickListener {
+            onEditarNota(pais)
+        }
+
+        binding.btnQuitarPais.setOnClickListener {
+            onQuitarPais(pais)
+        }
+
+        Glide.with(binding.ivBandera)
+            .load(pais.flagUrl.takeIf { it.isNotBlank() })
+            .placeholder(R.drawable.ic_quiz)
+            .fallback(R.drawable.ic_quiz)
+            .error(R.drawable.ic_quiz)
+            .into(binding.ivBandera)
+
+        binding.root.setOnClickListener {
+            onPaisClick(pais)
+        }
+    }
+
+    companion object {
+        private val DIFERENCIAS = object : DiffUtil.ItemCallback<PaisVisitado>() {
+            override fun areItemsTheSame(anterior: PaisVisitado, nuevo: PaisVisitado): Boolean {
+                return anterior.code == nuevo.code
+            }
+
+            override fun areContentsTheSame(anterior: PaisVisitado, nuevo: PaisVisitado): Boolean {
+                return anterior == nuevo
+            }
+        }
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/database/PaisVisitado.kt">
+package com.dam.pasaporteapp.database
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "visited_country_table")
+data class PaisVisitado(
+    @PrimaryKey val code: String,
+    val name: String,
+    val capital: String,
+    val region: String,
+    val flagUrl: String,
+    val note: String = ""
+)
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/database/PasaporteDatabase.kt">
+package com.dam.pasaporteapp.database
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(
+    entities = [PaisVisitado::class],
+    version = 1,
+    exportSchema = false
+)
+abstract class PasaporteDatabase : RoomDatabase() {
+
+    abstract fun paisVisitadoDao(): PaisVisitadoDao
+
+    companion object {
+        @Volatile
+        private var instancia: PasaporteDatabase? = null
+
+        fun obtenerInstancia(contexto: Context): PasaporteDatabase {
+            return instancia ?: synchronized(this) {
+                instancia ?: Room.databaseBuilder(
+                    contexto.applicationContext,
+                    PasaporteDatabase::class.java,
+                    "pasaporte.db"
+                ).build().also { instancia = it }
+            }
+        }
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/model/CountryDetailResponse.kt">
+package com.dam.pasaporteapp.model
+
+data class CountryDetailResponse(
+    val name: String,
+    val nativeName: String? = null,
+    val capital: String? = null,
+    val region: String? = null,
+    val subregion: String? = null,
+    val population: Long? = null,
+    val area: Double? = null,
+    val flags: FlagsResponse? = null,
+    val languages: List<LanguageResponse>? = null,
+    val currencies: List<CurrencyResponse>? = null
+)
+
+data class LanguageResponse(
+    val name: String? = null
+)
+
+data class CurrencyResponse(
+    val name: String? = null,
+    val symbol: String? = null
+)
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/model/CountryResponse.kt">
+package com.dam.pasaporteapp.model
+
+data class CountryResponse(
+    val alpha2Code: String,
+    val name: String,
+    val capital: String? = null,
+    val region: String? = null,
+    val flags: FlagsResponse? = null
+)
+
+data class FlagsResponse(
+    val png: String? = null,
+    val svg: String? = null
+)
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/model/Pais.kt">
+package com.dam.pasaporteapp.model
+
+data class Pais(
+    val codigo: String,
+    val nombre: String,
+    val capital: String?,
+    val region: String?,
+    val urlBandera: String? = null
+)
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/network/RetrofitHelper.kt">
+package com.dam.pasaporteapp.network
+
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
+object RetrofitHelper {
+
+    private const val BASE_URL = "https://countries.dev/"
+
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val apiService: CountryApiService by lazy {
+        retrofit.create(CountryApiService::class.java)
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/ui/PasaporteActivity.kt">
+package com.dam.pasaporteapp.ui
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.dam.pasaporteapp.R
+import com.dam.pasaporteapp.adapter.PasaporteAdapter
+import com.dam.pasaporteapp.databinding.ActivityPasaporteBinding
+import com.dam.pasaporteapp.repository.CountryRepository
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import android.app.Dialog
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import com.dam.pasaporteapp.database.PaisVisitado
+import kotlinx.coroutines.CancellationException
+
+class PasaporteActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityPasaporteBinding
+    private val countryRepository by lazy { CountryRepository(applicationContext) }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        binding = ActivityPasaporteBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { vista, insets ->
+            val barras = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            vista.setPadding(barras.left, barras.top, barras.right, barras.bottom)
+            insets
+        }
+
+        val pasaporteAdapter = PasaporteAdapter(
+            onPaisClick = { pais ->
+                val intent = Intent(this, DetallePaisActivity::class.java)
+                    .putExtra(DetallePaisActivity.EXTRA_CODE, pais.code)
+
+                startActivity(intent)
+            },
+            onEditarNota = ::editarNota,
+            onQuitarPais = ::quitarPais
+        )
+
+        binding.rvVisitados.layoutManager = LinearLayoutManager(this)
+        binding.rvVisitados.adapter = pasaporteAdapter
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                countryRepository.observarVisitados().collect { visitados ->
+                    pasaporteAdapter.submitList(visitados)
+
+                    val cantidad = visitados.size
+                    binding.tvResumenPasaporte.text = resources.getQuantityString(
+                        R.plurals.pasaporte_resumen,
+                        cantidad,
+                        cantidad
+                    )
+                    binding.tvPasaporteVacio.isVisible = visitados.isEmpty()
+                    binding.rvVisitados.isVisible = visitados.isNotEmpty()
+                }
+            }
+        }
+    }
+
+    private fun editarNota(pais: PaisVisitado) {
+        val dialogo = Dialog(this)
+        dialogo.setContentView(R.layout.dialog_note)
+
+        val campoNota = dialogo.findViewById<EditText>(R.id.etNotaPasaporte)
+        val botonGuardar = dialogo.findViewById<Button>(R.id.btnGuardarNota)
+        val botonCancelar = dialogo.findViewById<Button>(R.id.btnCancelarNota)
+
+        campoNota.setText(pais.note)
+        campoNota.setSelection(campoNota.length())
+
+        botonCancelar.setOnClickListener {
+            dialogo.dismiss()
+        }
+
+        botonGuardar.setOnClickListener {
+            val nota = campoNota.text.toString()
+            botonGuardar.isEnabled = false
+
+            lifecycleScope.launch {
+                try {
+                    countryRepository.guardarNota(pais, nota)
+                    dialogo.dismiss()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    botonGuardar.isEnabled = true
+                    Toast.makeText(
+                        this@PasaporteActivity,
+                        R.string.error_cambiar_visita,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+
+        dialogo.show()
+        dialogo.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    private fun quitarPais(pais: PaisVisitado) {
+        lifecycleScope.launch {
+            try {
+                countryRepository.eliminarVisitado(pais)
+                Toast.makeText(
+                    this@PasaporteActivity,
+                    R.string.pais_eliminado,
+                    Toast.LENGTH_SHORT
+                ).show()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Toast.makeText(
+                    this@PasaporteActivity,
+                    R.string.error_cambiar_visita,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+}
+</file>
+
+<file path="app/src/main/keepRules/rules.keep">
+# Add project specific R8 rules here.
+# AGP will combine all keep rule files in src/main/keepRules to pass to R8
+#
+# For more details, see
+#   https://d.android.com/r/tools/r8/keep-rules
+
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
+</file>
+
+<file path="app/src/main/res/drawable/ic_home.xml">
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:height="24dp" android:tint="#000000" android:viewportHeight="960" android:viewportWidth="960" android:width="24dp">
+      
+    <path android:fillColor="@android:color/white" android:pathData="M240,760L360,760L360,520L600,520L600,760L720,760L720,400L480,220L240,400L240,760ZM160,840L160,360L480,120L800,360L800,840L520,840L520,600L440,600L440,840L160,840ZM480,490L480,490L480,490L480,490L480,490L480,490L480,490L480,490L480,490Z"/>
+    
+</vector>
+</file>
+
+<file path="app/src/main/res/drawable/ic_launcher_background.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#3DDC84"
+        android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M9,0L9,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,0L19,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M29,0L29,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M39,0L39,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M49,0L49,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M59,0L59,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M69,0L69,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M79,0L79,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M89,0L89,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M99,0L99,108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,9L108,9"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,19L108,19"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,29L108,29"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,39L108,39"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,49L108,49"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,59L108,59"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,69L108,69"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,79L108,79"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,89L108,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,99L108,99"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,29L89,29"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,39L89,39"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,49L89,49"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,59L89,59"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,69L89,69"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19,79L89,79"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M29,19L29,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M39,19L39,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M49,19L49,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M59,19L59,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M69,19L69,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M79,19L79,89"
+        android:strokeWidth="0.8"
+        android:strokeColor="#33FFFFFF" />
+</vector>
+</file>
+
+<file path="app/src/main/res/drawable/ic_launcher_foreground.xml">
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:endX="85.84757"
+                android:endY="92.4963"
+                android:startX="42.9492"
+                android:startY="49.59793"
+                android:type="linear">
+                <item
+                    android:color="#44000000"
+                    android:offset="0.0" />
+                <item
+                    android:color="#00000000"
+                    android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
+        android:strokeWidth="1"
+        android:strokeColor="#00000000" />
+</vector>
+</file>
+
+<file path="app/src/main/res/drawable/ic_passport.xml">
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:height="24dp" android:tint="#000000" android:viewportHeight="960" android:viewportWidth="960" android:width="24dp">
+      
+    <path android:fillColor="@android:color/white" android:pathData="M240,880Q207,880 183.5,856.5Q160,833 160,800L160,160Q160,127 183.5,103.5Q207,80 240,80L720,80Q753,80 776.5,103.5Q800,127 800,160L800,800Q800,833 776.5,856.5Q753,880 720,880L240,880ZM240,800L720,800Q720,800 720,800Q720,800 720,800L720,160Q720,160 720,160Q720,160 720,160L640,160L640,440L540,380L440,440L440,160L240,160Q240,160 240,160Q240,160 240,160L240,800Q240,800 240,800Q240,800 240,800ZM240,800Q240,800 240,800Q240,800 240,800L240,160Q240,160 240,160Q240,160 240,160L240,160Q240,160 240,160Q240,160 240,160L240,800Q240,800 240,800Q240,800 240,800ZM440,440L540,380L640,440L640,440L540,380L440,440Z"/>
+    
+</vector>
+</file>
+
+<file path="app/src/main/res/drawable/ic_quiz.xml">
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:height="24dp" android:tint="#000000" android:viewportHeight="960" android:viewportWidth="960" android:width="24dp">
+      
+    <path android:fillColor="@android:color/white" android:pathData="M200,840L200,160L560,160L576,240L800,240L800,640L520,640L504,560L280,560L280,840L200,840ZM500,400L500,400L500,400L500,400L500,400L500,400L500,400L500,400ZM586,560L720,560L720,320L510,320L494,240L280,240L280,480L570,480L586,560Z"/>
+    
+</vector>
+</file>
+
+<file path="app/src/main/res/drawable/ic_settings.xml">
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:height="24dp" android:tint="#000000" android:viewportHeight="960" android:viewportWidth="960" android:width="24dp">
+      
+    <path android:fillColor="@android:color/white" android:pathData="M370,880L354,752Q341,747 329.5,740Q318,733 307,725L188,775L78,585L181,507Q180,500 180,493.5Q180,487 180,480Q180,473 180,466.5Q180,460 181,453L78,375L188,185L307,235Q318,227 330,220Q342,213 354,208L370,80L590,80L606,208Q619,213 630.5,220Q642,227 653,235L772,185L882,375L779,453Q780,460 780,466.5Q780,473 780,480Q780,487 780,493.5Q780,500 778,507L881,585L771,775L653,725Q642,733 630,740Q618,747 606,752L590,880L370,880ZM440,800L519,800L533,694Q564,686 590.5,670.5Q617,655 639,633L738,674L777,606L691,541Q696,527 698,511.5Q700,496 700,480Q700,464 698,448.5Q696,433 691,419L777,354L738,286L639,328Q617,305 590.5,289.5Q564,274 533,266L520,160L441,160L427,266Q396,274 369.5,289.5Q343,305 321,327L222,286L183,354L269,418Q264,433 262,448Q260,463 260,480Q260,496 262,511Q264,526 269,541L183,606L222,674L321,632Q343,655 369.5,670.5Q396,686 427,694L440,800ZM482,620Q540,620 581,579Q622,538 622,480Q622,422 581,381Q540,340 482,340Q423,340 382.5,381Q342,422 342,480Q342,538 382.5,579Q423,620 482,620ZM480,480L480,480Q480,480 480,480Q480,480 480,480L480,480L480,480L480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480L480,480L480,480L480,480Q480,480 480,480Q480,480 480,480L480,480L480,480L480,480Q480,480 480,480Q480,480 480,480L480,480L480,480L480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480Q480,480 480,480L480,480L480,480L480,480Q480,480 480,480Q480,480 480,480L480,480Z"/>
+    
+</vector>
+</file>
+
+<file path="app/src/main/res/layout/activity_detalle_pais.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:id="@+id/contenidoDetalle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/ivBanderaDetalle"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:contentDescription="@string/descripcion_bandera"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/tvNombreDetalle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvNombreNativo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tvDatosDetalle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="6dp"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btnPlanificarViaje"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/planificar_viaje" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabVisitado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/marcar_visitado"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/progressDetalle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+</FrameLayout>
+</file>
+
+<file path="app/src/main/res/layout/activity_main.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:paddingEnd="8dp">
+
+        <ImageButton
+            android:id="@+id/btnInicio"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/nav_inicio"
+            android:src="@drawable/ic_home"
+            app:tint="?attr/colorOnSurface" />
+
+        <ImageButton
+            android:id="@+id/btnPasaporte"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/nav_pasaporte"
+            android:src="@drawable/ic_passport"
+            app:tint="?attr/colorOnSurface" />
+
+        <ImageButton
+            android:id="@+id/btnQuiz"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/nav_quiz"
+            android:src="@drawable/ic_quiz"
+            app:tint="?attr/colorOnSurface" />
+
+        <ImageButton
+            android:id="@+id/btnAjustes"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/nav_ajustes"
+            android:src="@drawable/ic_settings"
+            app:tint="?attr/colorOnSurface" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvTitulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/searchPaises"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        app:iconifiedByDefault="false"
+        app:queryHint="@string/buscar_pais" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupRegiones"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            app:checkedChip="@id/chipTodas"
+            app:selectionRequired="true"
+            app:singleLine="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipTodas"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/region_todas" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAfrica"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/region_africa" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAmericas"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/region_americas" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAsia"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/region_asia" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEurope"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/region_europe" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipOceania"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/region_oceania" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+    </HorizontalScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPaises"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp" />
+
+        <ProgressBar
+            android:id="@+id/progressPaises"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>
+</file>
+
+<file path="app/src/main/res/layout/activity_pasaporte.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/nav_pasaporte"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvResumenPasaporte"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/tvPasaporteVacio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/pasaporte_vacio"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvVisitados"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:padding="8dp" />
+
+</LinearLayout>
+</file>
+
+<file path="app/src/main/res/layout/dialog_note.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pasaporte_editar_nota"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etNotaPasaporte"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="top|start"
+        android:hint="@string/pasaporte_nota_hint"
+        android:inputType="textCapSentences|textMultiLine"
+        android:minLines="3" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnCancelarNota"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pasaporte_cancelar_nota" />
+
+        <Button
+            android:id="@+id/btnGuardarNota"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/pasaporte_guardar_nota" />
+
+    </LinearLayout>
+
+</LinearLayout>
+</file>
+
+<file path="app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+</file>
+
+<file path="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+</file>
+
+<file path="app/src/main/res/values/themes.xml">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PasaporteApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>
+
+    <style name="Theme.PasaporteApp" parent="Base.Theme.PasaporteApp" />
+</resources>
+</file>
+
+<file path="app/src/main/res/values-night/themes.xml">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PasaporteApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your dark theme here. -->
+        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    </style>
+</resources>
+</file>
+
+<file path="app/src/main/res/xml/backup_rules.xml">
+<?xml version="1.0" encoding="utf-8"?><!--
+   Sample backup rules file; uncomment and customize as necessary.
+   See https://developer.android.com/guide/topics/data/autobackup
+   for details.
+   Note: This file is ignored for devices older than API 31
+   See https://developer.android.com/about/versions/12/backup-restore
+-->
+<full-backup-content>
+    <!--
+   <include domain="sharedpref" path="."/>
+   <exclude domain="sharedpref" path="device.xml"/>
+-->
+</full-backup-content>
+</file>
+
+<file path="app/src/main/res/xml/data_extraction_rules.xml">
+<?xml version="1.0" encoding="utf-8"?><!--
+   Sample data extraction rules file; uncomment and customize as necessary.
+   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+   for details.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- TODO: Use <include> and <exclude> to control what is backed up.
+        <include .../>
+        <exclude .../>
+        -->
+    </cloud-backup>
+    <!--
+    <device-transfer>
+        <include .../>
+        <exclude .../>
+    </device-transfer>
+    -->
+</data-extraction-rules>
+</file>
+
+<file path="app/src/test/java/com/dam/pasaporteapp/ExampleUnitTest.kt">
+package com.dam.pasaporteapp
+
+import org.junit.Test
+
+import org.junit.Assert.*
+
+/**
+ * Example local unit test, which will execute on the development machine (host).
+ *
+ * See [testing documentation](http://d.android.com/tools/testing).
+ */
+class ExampleUnitTest {
+    @Test
+    fun addition_isCorrect() {
+        assertEquals(4, 2 + 2)
+    }
+}
+</file>
+
+<file path="app/.gitignore">
+/build
+</file>
+
+<file path="gradle/wrapper/gradle-wrapper.properties">
+#Wed Nov 18 10:22:04 CET 2026
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionSha256Sum=553c78f50dafcd54d65b9a444649057857469edf836431389695608536d6b746
+distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.0-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+</file>
+
+<file path="gradle/gradle-daemon-jvm.properties">
+#This file is generated by updateDaemonJvm
+toolchainUrl.FREE_BSD.AARCH64=https\://api.foojay.io/disco/v3.0/ids/cf726b4a1c84b50457225f9bba6d7650/redirect
+toolchainUrl.FREE_BSD.X86_64=https\://api.foojay.io/disco/v3.0/ids/fa1e318c287360478e3c83a9a3ef1007/redirect
+toolchainUrl.LINUX.AARCH64=https\://api.foojay.io/disco/v3.0/ids/cf726b4a1c84b50457225f9bba6d7650/redirect
+toolchainUrl.LINUX.X86_64=https\://api.foojay.io/disco/v3.0/ids/fa1e318c287360478e3c83a9a3ef1007/redirect
+toolchainUrl.MAC_OS.AARCH64=https\://api.foojay.io/disco/v3.0/ids/c2dd35c9d0aaf0ba6ad0791320f99dfc/redirect
+toolchainUrl.MAC_OS.X86_64=https\://api.foojay.io/disco/v3.0/ids/e5810bd7fd1f8a586644409d395a7e55/redirect
+toolchainUrl.UNIX.AARCH64=https\://api.foojay.io/disco/v3.0/ids/cf726b4a1c84b50457225f9bba6d7650/redirect
+toolchainUrl.UNIX.X86_64=https\://api.foojay.io/disco/v3.0/ids/fa1e318c287360478e3c83a9a3ef1007/redirect
+toolchainUrl.WINDOWS.AARCH64=https\://api.foojay.io/disco/v3.0/ids/7b3c4877c0749019e6805bb61e421497/redirect
+toolchainUrl.WINDOWS.X86_64=https\://api.foojay.io/disco/v3.0/ids/d76df094a9cbbabd3b08251f9e61444a/redirect
+toolchainVersion=25
+</file>
+
+<file path=".gitignore">
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+</file>
+
+<file path="build.gradle.kts">
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+}
+</file>
+
+<file path="gradle.properties">
+# Project-wide Gradle settings.
+# IDE (e.g. Android Studio) users:
+# Gradle settings configured through the IDE *will override*
+# any settings specified in this file.
+# For more details on how to configure your build environment visit
+# http://www.gradle.org/docs/current/userguide/build_environment.html
+# Specifies the JVM arguments used for the daemon process.
+# The setting is particularly useful for tweaking memory settings.
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+# When configured, Gradle will run in incubating parallel mode.
+# This option should only be used with decoupled projects. For more details, visit
+# https://developer.android.com/r/tools/gradle-multi-project-decoupled-projects
+# org.gradle.parallel=true
+# When enabled, the Configuration Cache allows Gradle to skip the configuration
+# phase entirely if nothing that affects the build configuration (such as build scripts)
+# has changed. Additionally, Gradle applies performance optimizations to task execution.
+org.gradle.configuration-cache=true
+# Kotlin code style for this project: "official" or "obsolete":
+kotlin.code.style=official
+</file>
+
+<file path="gradlew">
+#!/bin/sh
+
+#
+# Copyright © 2015 the original authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+##############################################################################
+#
+#   Gradle start up script for POSIX generated by Gradle.
+#
+#   Important for running:
+#
+#   (1) You need a POSIX-compliant shell to run this script. If your /bin/sh is
+#       noncompliant, but you have some other compliant shell such as ksh or
+#       bash, then to run this script, type that shell name before the whole
+#       command line, like:
+#
+#           ksh Gradle
+#
+#       Busybox and similar reduced shells will NOT work, because this script
+#       requires all of these POSIX shell features:
+#         * functions;
+#         * expansions «$var», «${var}», «${var:-default}», «${var+SET}»,
+#           «${var#prefix}», «${var%suffix}», and «$( cmd )»;
+#         * compound commands having a testable exit status, especially «case»;
+#         * various built-in commands including «command», «set», and «ulimit».
+#
+#   Important for patching:
+#
+#   (2) This script targets any POSIX shell, so it avoids extensions provided
+#       by Bash, Ksh, etc; in particular arrays are avoided.
+#
+#       The "traditional" practice of packing multiple parameters into a
+#       space-separated string is a well documented source of bugs and security
+#       problems, so this is (mostly) avoided, by progressively accumulating
+#       options in "$@", and eventually passing that to Java.
+#
+#       Where the inherited environment variables (DEFAULT_JVM_OPTS, JAVA_OPTS,
+#       and GRADLE_OPTS) rely on word-splitting, this is performed explicitly;
+#       see the in-line comments for details.
+#
+#       There are tweaks for specific operating systems such as AIX, CygWin,
+#       Darwin, MinGW, and NonStop.
+#
+#   (3) This script is generated from the Groovy template
+#       https://github.com/gradle/gradle/blob/HEAD/platforms/jvm/plugins-application/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
+#       within the Gradle project.
+#
+#       You can find Gradle at https://github.com/gradle/gradle/.
+#
+##############################################################################
+
+# Attempt to set APP_HOME
+
+# Resolve links: $0 may be a link
+app_path=$0
+
+# Need this for daisy-chained symlinks.
+while
+    APP_HOME=${app_path%"${app_path##*/}"}  # leaves a trailing /; empty if no leading path
+    [ -h "$app_path" ]
+do
+    ls=$( ls -ld "$app_path" )
+    link=${ls#*' -> '}
+    case $link in             #(
+      /*)   app_path=$link ;; #(
+      *)    app_path=$APP_HOME$link ;;
+    esac
+done
+
+# This is normally unused
+# shellcheck disable=SC2034
+APP_BASE_NAME=${0##*/}
+# Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
+APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s\n' "$PWD" ) || exit
+
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD=maximum
+
+warn () {
+    echo "$*"
+} >&2
+
+die () {
+    echo
+    echo "$*"
+    echo
+    exit 1
+} >&2
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+msys=false
+darwin=false
+nonstop=false
+case "$( uname )" in                #(
+  CYGWIN* )         cygwin=true  ;; #(
+  Darwin* )         darwin=true  ;; #(
+  MSYS* | MINGW* )  msys=true    ;; #(
+  NONSTOP* )        nonstop=true ;;
+esac
+
+CLASSPATH="\\\"\\\""
+
+
+# Determine the Java command to use to start the JVM.
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        # IBM's JDK on AIX uses strange locations for the executables
+        JAVACMD=$JAVA_HOME/jre/sh/java
+    else
+        JAVACMD=$JAVA_HOME/bin/java
+    fi
+    if [ ! -x "$JAVACMD" ] ; then
+        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+else
+    JAVACMD=java
+    if ! command -v java >/dev/null 2>&1
+    then
+        die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+fi
+
+# Increase the maximum file descriptors if we can.
+if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then
+    case $MAX_FD in #(
+      max*)
+        # In POSIX sh, ulimit -H is undefined. That's why the result is checked to see if it worked.
+        # shellcheck disable=SC2039,SC3045
+        MAX_FD=$( ulimit -H -n ) ||
+            warn "Could not query maximum file descriptor limit"
+    esac
+    case $MAX_FD in  #(
+      '' | soft) :;; #(
+      *)
+        # In POSIX sh, ulimit -n is undefined. That's why the result is checked to see if it worked.
+        # shellcheck disable=SC2039,SC3045
+        ulimit -n "$MAX_FD" ||
+            warn "Could not set maximum file descriptor limit to $MAX_FD"
+    esac
+fi
+
+# Collect all arguments for the java command, stacking in reverse order:
+#   * args from the command line
+#   * the main class name
+#   * -classpath
+#   * -D...appname settings
+#   * --module-path (only if needed)
+#   * DEFAULT_JVM_OPTS, JAVA_OPTS, and GRADLE_OPTS environment variables.
+
+# For Cygwin or MSYS, switch paths to Windows format before running java
+if "$cygwin" || "$msys" ; then
+    APP_HOME=$( cygpath --path --mixed "$APP_HOME" )
+    CLASSPATH=$( cygpath --path --mixed "$CLASSPATH" )
+
+    JAVACMD=$( cygpath --unix "$JAVACMD" )
+
+    # Now convert the arguments - kludge to limit ourselves to /bin/sh
+    for arg do
+        if
+            case $arg in                                #(
+              -*)   false ;;                            # don't mess with options #(
+              /?*)  t=${arg#/} t=/${t%%/*}              # looks like a POSIX filepath
+                    [ -e "$t" ] ;;                      #(
+              *)    false ;;
+            esac
+        then
+            arg=$( cygpath --path --ignore --mixed "$arg" )
+        fi
+        # Roll the args list around exactly as many times as the number of
+        # args, so each arg winds up back in the position where it started, but
+        # possibly modified.
+        #
+        # NB: a `for` loop captures its iteration list before it begins, so
+        # changing the positional parameters here affects neither the number of
+        # iterations, nor the values presented in `arg`.
+        shift                   # remove old arg
+        set -- "$@" "$arg"      # push replacement arg
+    done
+fi
+
+
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+
+# Collect all arguments for the java command:
+#   * DEFAULT_JVM_OPTS, JAVA_OPTS, and optsEnvironmentVar are not allowed to contain shell fragments,
+#     and any embedded shellness will be escaped.
+#   * For example: A user cannot expect ${Hostname} to be expanded, as it is an environment variable and will be
+#     treated as '${Hostname}' itself on the command line.
+
+set -- \
+        "-Dorg.gradle.appname=$APP_BASE_NAME" \
+        -classpath "$CLASSPATH" \
+        -jar "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+        "$@"
+
+# Stop when "xargs" is not available.
+if ! command -v xargs >/dev/null 2>&1
+then
+    die "xargs is not available"
+fi
+
+# Use "xargs" to parse quoted args.
+#
+# With -n1 it outputs one arg per line, with the quotes and backslashes removed.
+#
+# In Bash we could simply go:
+#
+#   readarray ARGS < <( xargs -n1 <<<"$var" ) &&
+#   set -- "${ARGS[@]}" "$@"
+#
+# but POSIX shell has neither arrays nor command substitution, so instead we
+# post-process each arg (as a line of input to sed) to backslash-escape any
+# character that might be a shell metacharacter, then use eval to reverse
+# that process (while maintaining the separation between arguments), and wrap
+# the whole thing up as a single "set" statement.
+#
+# This will of course break if any of these variables contains a newline or
+# an unmatched quote.
+#
+
+eval "set -- $(
+        printf '%s\n' "$DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS" |
+        xargs -n1 |
+        sed ' s~[^-[:alnum:]+,./:=@_]~\\&~g; ' |
+        tr '\n' ' '
+    )" '"$@"'
+
+exec "$JAVACMD" "$@"
+</file>
+
+<file path="gradlew.bat">
+@rem
+@rem Copyright 2015 the original author or authors.
+@rem
+@rem Licensed under the Apache License, Version 2.0 (the "License");
+@rem you may not use this file except in compliance with the License.
+@rem You may obtain a copy of the License at
+@rem
+@rem      https://www.apache.org/licenses/LICENSE-2.0
+@rem
+@rem Unless required by applicable law or agreed to in writing, software
+@rem distributed under the License is distributed on an "AS IS" BASIS,
+@rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+@rem See the License for the specific language governing permissions and
+@rem limitations under the License.
+@rem
+@rem SPDX-License-Identifier: Apache-2.0
+@rem
+
+@if "%DEBUG%"=="" @echo off
+@rem ##########################################################################
+@rem
+@rem  Gradle startup script for Windows
+@rem
+@rem ##########################################################################
+
+@rem Set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" setlocal
+
+set DIRNAME=%~dp0
+if "%DIRNAME%"=="" set DIRNAME=.
+@rem This is normally unused
+set APP_BASE_NAME=%~n0
+set APP_HOME=%DIRNAME%
+
+@rem Resolve any "." and ".." in APP_HOME to make it shorter.
+for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
+
+@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
+
+@rem Find java.exe
+if defined JAVA_HOME goto findJavaFromJavaHome
+
+set JAVA_EXE=java.exe
+%JAVA_EXE% -version >NUL 2>&1
+if %ERRORLEVEL% equ 0 goto execute
+
+echo. 1>&2
+echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH. 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
+
+goto fail
+
+:findJavaFromJavaHome
+set JAVA_HOME=%JAVA_HOME:"=%
+set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+
+if exist "%JAVA_EXE%" goto execute
+
+echo. 1>&2
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
+
+goto fail
+
+:execute
+@rem Setup the command line
+
+set CLASSPATH=
+
+
+@rem Execute Gradle
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" -jar "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" %*
+
+:end
+@rem End local scope for the variables with windows NT shell
+if %ERRORLEVEL% equ 0 goto mainEnd
+
+:fail
+rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
+rem the _cmd.exe /c_ return code!
+set EXIT_CODE=%ERRORLEVEL%
+if %EXIT_CODE% equ 0 set EXIT_CODE=1
+if not ""=="%GRADLE_EXIT_CONSOLE%" exit %EXIT_CODE%
+exit /b %EXIT_CODE%
+
+:mainEnd
+if "%OS%"=="Windows_NT" endlocal
+
+:omega
+</file>
+
+<file path="README.md">
+# PasaporteApp
+</file>
+
+<file path="settings.gradle.kts">
+pluginManagement {
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "PasaporteApp"
+include(":app")
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/database/PaisVisitadoDao.kt">
+package com.dam.pasaporteapp.database
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
+import androidx.room.Update
+
+@Dao
+interface PaisVisitadoDao {
+
+    @Query("SELECT * FROM visited_country_table WHERE code = :codigo")
+    suspend fun buscarPorCodigo(codigo: String): PaisVisitado?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertar(pais: PaisVisitado)
+
+    @Delete
+    suspend fun eliminar(pais: PaisVisitado)
+
+    @Query("SELECT * FROM visited_country_table ORDER BY name COLLATE NOCASE")
+    fun observarVisitados(): Flow<List<PaisVisitado>>
+
+    @Update
+    suspend fun actualizar(pais: PaisVisitado)
+
+    @Query("SELECT code FROM visited_country_table")
+    fun observarCodigosVisitados(): Flow<List<String>>
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/network/CountryApiService.kt">
+package com.dam.pasaporteapp.network
+
+import com.dam.pasaporteapp.model.CountryResponse
+import retrofit2.Response
+import retrofit2.http.GET
+import retrofit2.http.Query
+import com.dam.pasaporteapp.model.CountryDetailResponse
+import retrofit2.http.Path
+
+interface CountryApiService {
+
+    @GET("countries")
+    suspend fun getAllCountries(
+        @Query("fields") fields: String = "alpha2Code,name,capital,region,flags"
+    ): Response<List<CountryResponse>>
+
+    @GET("alpha/{code}")
+    suspend fun getCountryByCode(
+        @Path("code") codigo: String
+    ): CountryDetailResponse
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/ui/DetallePaisActivity.kt">
+package com.dam.pasaporteapp.ui
+
+import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.dam.pasaporteapp.R
+import com.dam.pasaporteapp.databinding.ActivityDetallePaisBinding
+import com.dam.pasaporteapp.model.CountryDetailResponse
+import com.dam.pasaporteapp.repository.CountryRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
+import android.content.res.ColorStateList
+import android.content.Intent
+
+class DetallePaisActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityDetallePaisBinding
+    private val countryRepository by lazy { CountryRepository(applicationContext) }
+
+    private val formatoNumero = DecimalFormat(
+        "#,##0.##",
+        DecimalFormatSymbols(Locale.forLanguageTag("es-ES"))
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val codigo = intent.getStringExtra(EXTRA_CODE)
+        if (codigo.isNullOrBlank()) {
+            finish()
+            return
+        }
+
+        binding = ActivityDetallePaisBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { vista, insets ->
+            val barras = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            vista.setPadding(barras.left, barras.top, barras.right, barras.bottom)
+            insets
+        }
+
+        cargarDetalle(codigo)
+    }
+
+    private fun cargarDetalle(codigo: String) {
+        lifecycleScope.launch {
+            try {
+                val pais = countryRepository.getCountryByCode(codigo)
+                mostrarDetalle(pais)
+                configurarBotonVisitado(codigo, pais)
+                binding.contenidoDetalle.isVisible = true
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e("PasaporteApp", "Error al cargar el país $codigo", error)
+                Toast.makeText(
+                    this@DetallePaisActivity,
+                    R.string.error_cargar_detalle,
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                binding.progressDetalle.isVisible = false
+            }
+        }
+    }
+
+    private suspend fun configurarBotonVisitado(
+        codigo: String,
+        pais: CountryDetailResponse
+    ) {
+        mostrarEstadoVisitado(countryRepository.estaVisitado(codigo))
+        binding.fabVisitado.isVisible = true
+
+        binding.fabVisitado.setOnClickListener {
+            binding.fabVisitado.isEnabled = false
+
+            lifecycleScope.launch {
+                try {
+                    val visitado = countryRepository.cambiarEstadoVisita(codigo, pais)
+                    mostrarEstadoVisitado(visitado)
+
+                    val mensaje = if (visitado) {
+                        R.string.pais_guardado
+                    } else {
+                        R.string.pais_eliminado
+                    }
+
+                    Toast.makeText(this@DetallePaisActivity, mensaje, Toast.LENGTH_SHORT).show()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    Log.e("PasaporteApp", "Error al actualizar la visita de $codigo", error)
+                    Toast.makeText(
+                        this@DetallePaisActivity,
+                        R.string.error_cambiar_visita,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } finally {
+                    binding.fabVisitado.isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun mostrarEstadoVisitado(visitado: Boolean) {
+        val icono = if (visitado) {
+            android.R.drawable.star_big_on
+        } else {
+            android.R.drawable.star_big_off
+        }
+
+        val colorIcono = if (visitado) {
+            R.color.visita_icono_guardado
+        } else {
+            R.color.visita_icono_no_guardado
+        }
+
+        val colorFondo = if (visitado) {
+            R.color.visita_fondo_guardado
+        } else {
+            R.color.visita_fondo_no_guardado
+        }
+
+        val descripcion = if (visitado) {
+            R.string.desmarcar_visitado
+        } else {
+            R.string.marcar_visitado
+        }
+
+        binding.fabVisitado.apply {
+            setImageResource(icono)
+            imageTintList = ColorStateList.valueOf(getColor(colorIcono))
+            backgroundTintList = ColorStateList.valueOf(getColor(colorFondo))
+            contentDescription = getString(descripcion)
+        }
+    }
+
+    private fun mostrarDetalle(pais: CountryDetailResponse) {
+        binding.tvNombreDetalle.text = pais.name
+        binding.tvNombreNativo.text = pais.nativeName.orEmpty()
+        binding.tvNombreNativo.isVisible = !pais.nativeName.isNullOrBlank()
+
+        Glide.with(this)
+            .load(pais.flags?.png)
+            .placeholder(R.drawable.ic_quiz)
+            .error(R.drawable.ic_quiz)
+            .into(binding.ivBanderaDetalle)
+
+        val capital = pais.capital?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.no_capital)
+
+        val poblacion = pais.population?.let {
+            getString(R.string.detalle_habitantes, formatoNumero.format(it))
+        }
+
+        val superficie = pais.area?.let {
+            getString(R.string.detalle_km2, formatoNumero.format(it))
+        }
+
+        val idiomas = pais.languages.orEmpty()
+            .mapNotNull { it.name?.takeIf { nombre -> nombre.isNotBlank() } }
+            .joinToString(", ")
+
+        val monedas = pais.currencies.orEmpty().mapNotNull { moneda ->
+            val nombre = moneda.name?.takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
+
+            if (moneda.symbol.isNullOrBlank()) {
+                nombre
+            } else {
+                getString(R.string.detalle_moneda_con_simbolo, nombre, moneda.symbol)
+            }
+        }.joinToString(", ")
+
+        binding.tvDatosDetalle.text = listOf(
+            getString(R.string.detalle_capital, capital),
+            getString(R.string.detalle_region, textoOAlternativa(pais.region)),
+            getString(R.string.detalle_subregion, textoOAlternativa(pais.subregion)),
+            getString(R.string.detalle_poblacion, textoOAlternativa(poblacion)),
+            getString(R.string.detalle_superficie, textoOAlternativa(superficie)),
+            getString(R.string.detalle_idiomas, textoOAlternativa(idiomas)),
+            getString(R.string.detalle_monedas, textoOAlternativa(monedas))
+        ).joinToString("\n")
+
+        binding.btnPlanificarViaje.setOnClickListener {
+            val intent = Intent(this, PlanificadorActivity::class.java)
+                .putExtra(PlanificadorActivity.EXTRA_NOMBRE, pais.name)
+                .putExtra(PlanificadorActivity.EXTRA_REGION, pais.region.orEmpty())
+
+            startActivity(intent)
+        }
+    }
+
+    private fun textoOAlternativa(texto: String?): String =
+        texto?.takeIf { it.isNotBlank() } ?: getString(R.string.detalle_sin_datos)
+
+    companion object {
+        const val EXTRA_CODE = "EXTRA_CODE"
+    }
+}
+</file>
+
+<file path="app/src/main/res/layout/item_pais.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <ImageView
+            android:id="@+id/ivBandera"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:contentDescription="@string/descripcion_bandera"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_quiz" />
+
+        <TextView
+            android:id="@+id/tvNombrePais"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvCapital"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvRegion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:id="@+id/ivVisitado"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/descripcion_visitado"
+            android:src="@drawable/ic_passport"
+            app:tint="?attr/colorOnSurface" />
+
+        <LinearLayout
+            android:id="@+id/accionesPasaporte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvNotaPasaporte"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="16sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnEditarNota"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/pasaporte_editar_nota" />
+
+                <Button
+                    android:id="@+id/btnQuitarPais"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/pasaporte_quitar_pais" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+</file>
+
+<file path="app/src/main/res/values/colors.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="visita_icono_guardado">#694500</color>
+    <color name="visita_fondo_guardado">#FFE08A</color>
+    <color name="visita_icono_no_guardado">#434B57</color>
+    <color name="visita_fondo_no_guardado">#E8EBF0</color>
+
+    <color name="resultado_fondo_economico">#CDEFD6</color>
+    <color name="resultado_fondo_moderado">#FFDCAD</color>
+    <color name="resultado_fondo_gran_viaje">#FFC9C6</color>
+    <color name="resultado_texto">#202124</color>
+</resources>
+</file>
+
+<file path="gradle/libs.versions.toml">
+[versions]
+agp = "9.3.3"
+coreKtx = "1.19.1"
+junit = "4.13.2"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+appcompat = "1.8.0"
+material = "1.14.0"
+activityKtx = "1.13.0"
+constraintlayout = "2.2.2"
+roomCommon = "2.8.5"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/repository/CountryRepository.kt">
+package com.dam.pasaporteapp.repository
+
+import com.dam.pasaporteapp.model.Pais
+import com.dam.pasaporteapp.network.RetrofitHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import java.io.IOException
+import com.dam.pasaporteapp.model.CountryDetailResponse
+import android.content.Context
+import androidx.room.withTransaction
+import com.dam.pasaporteapp.database.PaisVisitado
+import com.dam.pasaporteapp.database.PasaporteDatabase
+import kotlinx.coroutines.flow.Flow
+
+class CountryRepository(contexto: Context) {
+
+    private val baseDeDatos = PasaporteDatabase.obtenerInstancia(contexto)
+    private val paisVisitadoDao = baseDeDatos.paisVisitadoDao()
+
+    private var codigosVisitados: Set<String> = emptySet()
+
+    suspend fun getAllCountries(): List<Pais> = withContext(Dispatchers.IO) {
+        val respuesta = RetrofitHelper.apiService.getAllCountries()
+
+        if (!respuesta.isSuccessful) {
+            throw HttpException(respuesta)
+        }
+
+        val paises = respuesta.body()
+            ?: throw IOException("La respuesta no contiene países")
+
+        paises.map { country ->
+            Pais(
+                codigo = country.alpha2Code,
+                nombre = country.name,
+                capital = country.capital,
+                region = country.region,
+                urlBandera = country.flags?.png
+            )
+        }.sortedBy { it.nombre.lowercase() }
+    }
+
+    suspend fun getCountryByCode(codigo: String): CountryDetailResponse =
+        withContext(Dispatchers.IO) {
+            RetrofitHelper.apiService.getCountryByCode(codigo)
+        }
+
+    suspend fun estaVisitado(codigo: String): Boolean {
+        return paisVisitadoDao.buscarPorCodigo(codigo) != null
+    }
+
+    suspend fun cambiarEstadoVisita(
+        codigo: String,
+        pais: CountryDetailResponse
+    ): Boolean = baseDeDatos.withTransaction {
+        val guardado = paisVisitadoDao.buscarPorCodigo(codigo)
+
+        if (guardado == null) {
+            paisVisitadoDao.insertar(pais.toEntity(codigo))
+            true
+        } else {
+            paisVisitadoDao.eliminar(guardado)
+            false
+        }
+    }
+
+    private fun CountryDetailResponse.toEntity(codigo: String): PaisVisitado {
+        return PaisVisitado(
+            code = codigo,
+            name = name,
+            capital = capital.orEmpty(),
+            region = region.orEmpty(),
+            flagUrl = flags?.png.orEmpty()
+        )
+    }
+
+    fun observarVisitados(): Flow<List<PaisVisitado>> {
+        return paisVisitadoDao.observarVisitados()
+    }
+
+    suspend fun guardarNota(pais: PaisVisitado, nota: String) {
+        paisVisitadoDao.actualizar(pais.copy(note = nota.trim()))
+    }
+
+    suspend fun eliminarVisitado(pais: PaisVisitado) {
+        paisVisitadoDao.eliminar(pais)
+    }
+
+    fun observarCodigosVisitados(): Flow<List<String>> {
+        return paisVisitadoDao.observarCodigosVisitados()
+    }
+}
+</file>
+
+<file path="app/src/main/java/com/dam/pasaporteapp/MainActivity.kt">
+package com.dam.pasaporteapp
+
+import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
+import com.dam.pasaporteapp.adapter.PaisAdapter
+import com.dam.pasaporteapp.databinding.ActivityMainBinding
+import com.dam.pasaporteapp.repository.CountryRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import androidx.appcompat.widget.SearchView
+import com.dam.pasaporteapp.model.Pais
+import android.content.Intent
+import com.dam.pasaporteapp.ui.DetallePaisActivity
+import com.dam.pasaporteapp.ui.PasaporteActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.flow.collect
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var paisAdapter: PaisAdapter
+    private val countryRepository by lazy { CountryRepository(applicationContext) }
+
+    private var todosLosPaises: List<Pais>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { vista, insets ->
+            val barras = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            vista.setPadding(barras.left, barras.top, barras.right, barras.bottom)
+            insets
+        }
+
+        binding.tvTitulo.setText(R.string.titulo_lista_paises)
+
+        initListeners()
+        initRecyclerView()
+        observarVisitados()
+        initFiltros()
+        cargarPaises()
+    }
+
+    private fun initListeners() {
+        binding.btnInicio.setOnClickListener {
+            Toast.makeText(this, R.string.nav_inicio, Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnPasaporte.setOnClickListener {
+            startActivity(Intent(this, PasaporteActivity::class.java))
+        }
+
+        binding.btnQuiz.setOnClickListener {
+            Toast.makeText(this, R.string.nav_quiz, Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnAjustes.setOnClickListener {
+            Toast.makeText(this, R.string.nav_ajustes, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun initRecyclerView() {
+        paisAdapter = PaisAdapter { pais ->
+            val intent = Intent(this, DetallePaisActivity::class.java)
+                .putExtra(DetallePaisActivity.EXTRA_CODE, pais.codigo)
+
+            startActivity(intent)
+        }
+
+        binding.rvPaises.layoutManager = GridLayoutManager(this, 2)
+        binding.rvPaises.adapter = paisAdapter
+    }
+
+    private fun initFiltros() {
+        binding.searchPaises.setOnQueryTextListener(
+            object : SearchView.OnQueryTextListener {
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    aplicarFiltros()
+                    return true
+                }
+
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    binding.searchPaises.clearFocus()
+                    return true
+                }
+            }
+        )
+
+        binding.chipGroupRegiones.setOnCheckedStateChangeListener { _, _ ->
+            aplicarFiltros()
+        }
+    }
+
+    private fun aplicarFiltros() {
+        val paises = todosLosPaises ?: return
+        val busqueda = binding.searchPaises.query.toString().trim()
+
+        val regionSeleccionada = when (binding.chipGroupRegiones.checkedChipId) {
+            R.id.chipAfrica -> getString(R.string.region_africa)
+            R.id.chipAmericas -> getString(R.string.region_americas)
+            R.id.chipAsia -> getString(R.string.region_asia)
+            R.id.chipEurope -> getString(R.string.region_europe)
+            R.id.chipOceania -> getString(R.string.region_oceania)
+            else -> null
+        }
+
+        val paisesFiltrados = paises.filter { pais ->
+            val coincideNombre = pais.nombre.contains(busqueda, ignoreCase = true)
+            val coincideRegion = regionSeleccionada == null ||
+                    pais.region == regionSeleccionada
+
+            coincideNombre && coincideRegion
+        }
+
+        paisAdapter.actualizarPaises(paisesFiltrados)
+
+        if (paisesFiltrados.isEmpty()) {
+            Toast.makeText(this, R.string.sin_resultados_paises, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun observarVisitados() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                countryRepository.observarCodigosVisitados().collect { codigos ->
+                    paisAdapter.actualizarVisitados(codigos.toSet())
+                }
+            }
+        }
+    }
+
+    private fun cargarPaises() {
+        binding.progressPaises.visibility = View.VISIBLE
+
+        lifecycleScope.launch {
+            try {
+                todosLosPaises = countryRepository.getAllCountries()
+                aplicarFiltros()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e("PasaporteApp", "Error al cargar los países", error)
+                Toast.makeText(
+                    this@MainActivity,
+                    R.string.error_loading_countries,
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                binding.progressPaises.visibility = View.GONE
+            }
+        }
+    }
+}
+</file>
+
+<file path="app/src/main/res/values/strings.xml">
+<resources>
+    <string name="app_name">PasaporteApp</string>
+    <string name="titulo_lista_paises">Explorar países</string>
+    <string name="nav_inicio">Inicio</string>
+    <string name="nav_pasaporte">Mi pasaporte</string>
+    <string name="nav_quiz">Quiz de banderas</string>
+    <string name="nav_ajustes">Ajustes</string>
+
+    <string name="buscar_pais">Buscar país</string>
+
+    <string name="region_todas">Todas</string>
+    <string name="region_africa">Africa</string>
+    <string name="region_americas">Americas</string>
+    <string name="region_asia">Asia</string>
+    <string name="region_europe">Europe</string>
+    <string name="region_oceania">Oceania</string>
+
+    <string name="descripcion_bandera">Bandera del país</string>
+    <string name="descripcion_visitado">Estado en el pasaporte</string>
+
+    <string name="no_capital">Sin capital</string>
+    <string name="error_loading_countries">Error al cargar los países. Revisa tu conexión.</string>
+
+    <string name="sin_resultados_paises">No hay países que coincidan con la búsqueda y la región.</string>
+
+    <string name="titulo_detalle_pais">Detalle del país</string>
+    <string name="detalle_codigo_pais">Código del país: %1$s</string>
+
+    <string name="detalle_sin_datos">Sin datos</string>
+    <string name="detalle_capital">Capital: %1$s</string>
+    <string name="detalle_region">Región: %1$s</string>
+    <string name="detalle_subregion">Subregión: %1$s</string>
+    <string name="detalle_poblacion">Población: %1$s</string>
+    <string name="detalle_superficie">Superficie: %1$s</string>
+    <string name="detalle_idiomas">Idiomas: %1$s</string>
+    <string name="detalle_monedas">Monedas: %1$s</string>
+    <string name="detalle_habitantes">%1$s hab.</string>
+    <string name="detalle_km2">%1$s km²</string>
+    <string name="detalle_moneda_con_simbolo">%1$s (%2$s)</string>
+    <string name="error_cargar_detalle">No se ha podido cargar el país. Comprueba la conexión.</string>
+
+    <string name="marcar_visitado">Añadir al pasaporte</string>
+    <string name="desmarcar_visitado">Quitar del pasaporte</string>
+    <string name="pais_guardado">País añadido al pasaporte</string>
+    <string name="pais_eliminado">País quitado del pasaporte</string>
+    <string name="error_cambiar_visita">No se ha podido actualizar el pasaporte.</string>
+
+    <string name="pasaporte_vacio">Todavía no has añadido ningún país al pasaporte.</string>
+
+    <plurals name="pasaporte_resumen">
+        <item quantity="one">Has visitado %d país</item>
+        <item quantity="other">Has visitado %d países</item>
+    </plurals>
+
+    <string name="pasaporte_sin_nota">Sin nota</string>
+    <string name="pasaporte_editar_nota">Editar nota</string>
+    <string name="pasaporte_quitar_pais">Quitar</string>
+    <string name="pasaporte_nota_hint">Escribe una nota del viaje</string>
+    <string name="pasaporte_guardar_nota">Guardar</string>
+    <string name="pasaporte_cancelar_nota">Cancelar</string>
+
+    <string name="estado_pais_visitado">En el pasaporte</string>
+    <string name="estado_pais_no_visitado">Fuera del pasaporte</string>
+
+    <string name="planificar_viaje">Planificar viaje</string>
+    <string name="planificador_titulo">Viaje a %1$s</string>
+    <string name="planificador_region">Región: %1$s · Multiplicador ×%2$s</string>
+    <string name="planificador_dias">Días: %1$d</string>
+    <string name="planificador_viajeros">Viajeros: %1$d</string>
+    <string name="planificador_mochilero">Mochilero · 50 € por persona y día</string>
+    <string name="planificador_estandar">Estándar · 100 € por persona y día</string>
+    <string name="planificador_lujo">Lujo · 250 € por persona y día</string>
+    <string name="planificador_seguro">Seguro de viaje · 5 € por persona y día</string>
+    <string name="planificador_calcular">Calcular</string>
+    <string name="planificador_total">Presupuesto: %1$s €</string>
+
+    <string name="resultado_economico">Escapada económica</string>
+    <string name="resultado_moderado">Viaje moderado</string>
+    <string name="resultado_gran_viaje">Gran viaje</string>
+    <string name="resultado_estilo">Estilo: %1$s</string>
+    <string name="resultado_seguro">Seguro: %1$s</string>
+    <string name="resultado_seguro_si">Sí</string>
+    <string name="resultado_seguro_no">No</string>
+    <string name="resultado_mochilero">Mochilero</string>
+    <string name="resultado_estandar">Estándar</string>
+    <string name="resultado_lujo">Lujo</string>
+    <string name="resultado_recalcular">Recalcular</string>
+
+</resources>
+</file>
+
+<file path="app/src/main/AndroidManifest.xml">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PasaporteApp">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.DetallePaisActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.PasaporteActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.ResultadoViajeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.PlanificadorActivity"
+            android:exported="false" />
+
+    </application>
+
+</manifest>
+</file>
+
+<file path="app/build.gradle.kts">
+plugins {
+    alias(libs.plugins.android.application)
+    id("com.google.devtools.ksp") version "2.3.9"
+}
+
+android {
+    namespace = "com.dam.pasaporteapp"
+    compileSdk {
+        version = release(37)
+    }
+
+    defaultConfig {
+        applicationId = "com.dam.pasaporteapp"
+        minSdk = 24
+        targetSdk = 37
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            optimization {
+                enable = false
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        viewBinding = true
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.room.common)
+    implementation(libs.material)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.junit)
+
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
+}
+</file>
+
+</files>

@@ -25,4 +25,7 @@ interface PaisVisitadoDao {
 
     @Update
     suspend fun actualizar(pais: PaisVisitado)
+
+    @Query("SELECT code FROM visited_country_table")
+    fun observarCodigosVisitados(): Flow<List<String>>
 }

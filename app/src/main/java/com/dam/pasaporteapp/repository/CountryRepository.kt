@@ -18,6 +18,8 @@ class CountryRepository(contexto: Context) {
     private val baseDeDatos = PasaporteDatabase.obtenerInstancia(contexto)
     private val paisVisitadoDao = baseDeDatos.paisVisitadoDao()
 
+    private var codigosVisitados: Set<String> = emptySet()
+
     suspend fun getAllCountries(): List<Pais> = withContext(Dispatchers.IO) {
         val respuesta = RetrofitHelper.apiService.getAllCountries()
 
@@ -43,6 +45,24 @@ class CountryRepository(contexto: Context) {
         withContext(Dispatchers.IO) {
             RetrofitHelper.apiService.getCountryByCode(codigo)
         }
+
+    suspend fun getQuizCountries(): List<Pais> = withContext(Dispatchers.IO) {
+        RetrofitHelper.apiService.getIndependentCountries()
+            .mapNotNull { country ->
+                val bandera = country.flags?.png
+                    ?.takeIf { it.isNotBlank() }
+                    ?: return@mapNotNull null
+
+                Pais(
+                    codigo = country.alpha2Code,
+                    nombre = country.name,
+                    capital = null,
+                    region = null,
+                    urlBandera = bandera
+                )
+            }
+            .distinctBy { it.codigo }
+    }
 
     suspend fun estaVisitado(codigo: String): Boolean {
         return paisVisitadoDao.buscarPorCodigo(codigo) != null
@@ -83,5 +103,9 @@ class CountryRepository(contexto: Context) {
 
     suspend fun eliminarVisitado(pais: PaisVisitado) {
         paisVisitadoDao.eliminar(pais)
+    }
+
+    fun observarCodigosVisitados(): Flow<List<String>> {
+        return paisVisitadoDao.observarCodigosVisitados()
     }
 }

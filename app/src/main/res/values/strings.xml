@@ -58,4 +58,46 @@
     <string name="pasaporte_nota_hint">Escribe una nota del viaje</string>
     <string name="pasaporte_guardar_nota">Guardar</string>
     <string name="pasaporte_cancelar_nota">Cancelar</string>
+
+    <string name="estado_pais_visitado">En el pasaporte</string>
+    <string name="estado_pais_no_visitado">Fuera del pasaporte</string>
+
+    <string name="planificar_viaje">Planificar viaje</string>
+    <string name="planificador_titulo">Viaje a %1$s</string>
+    <string name="planificador_region">Región: %1$s · Multiplicador ×%2$s</string>
+    <string name="planificador_dias">Días: %1$d</string>
+    <string name="planificador_viajeros">Viajeros: %1$d</string>
+    <string name="planificador_mochilero">Mochilero · 50 € por persona y día</string>
+    <string name="planificador_estandar">Estándar · 100 € por persona y día</string>
+    <string name="planificador_lujo">Lujo · 250 € por persona y día</string>
+    <string name="planificador_seguro">Seguro de viaje · 5 € por persona y día</string>
+    <string name="planificador_calcular">Calcular</string>
+    <string name="planificador_total">Presupuesto: %1$s €</string>
+
+    <string name="resultado_economico">Escapada económica</string>
+    <string name="resultado_moderado">Viaje moderado</string>
+    <string name="resultado_gran_viaje">Gran viaje</string>
+    <string name="resultado_estilo">Estilo: %1$s</string>
+    <string name="resultado_seguro">Seguro: %1$s</string>
+    <string name="resultado_seguro_si">Sí</string>
+    <string name="resultado_seguro_no">No</string>
+    <string name="resultado_mochilero">Mochilero</string>
+    <string name="resultado_estandar">Estándar</string>
+    <string name="resultado_lujo">Lujo</string>
+    <string name="resultado_recalcular">Recalcular</string>
+
+    <string name="quiz_pregunta">¿De qué país es esta bandera?</string>
+    <string name="quiz_acierto">¡Correcto!</string>
+    <string name="quiz_fallo">La respuesta correcta era %1$s.</string>
+    <string name="quiz_error_carga">No se han podido cargar los países del quiz. Comprueba la conexión.</string>
+    <string name="quiz_pocos_paises">Hacen falta al menos cuatro países con bandera para jugar.</string>
+
+    <string name="quiz_progreso">Pregunta %1$d de %2$d</string>
+    <string name="quiz_aciertos">Aciertos: %1$d</string>
+    <string name="quiz_siguiente">Siguiente</string>
+    <string name="quiz_resultado">Has acertado %1$d de %2$d</string>
+    <string name="quiz_repetir">Jugar otra vez</string>
+
+
+
 </resources>

@@ -19,6 +19,20 @@ class PaisAdapter(
         notifyDataSetChanged()
     }
 
+    fun actualizarVisitados(nuevosCodigos: Set<String>) {
+        val codigosAnteriores = codigosVisitados
+        codigosVisitados = nuevosCodigos
+
+        listaPaises.forEachIndexed { posicion, pais ->
+            val estabaVisitado = pais.codigo in codigosAnteriores
+            val estaVisitado = pais.codigo in nuevosCodigos
+
+            if (estabaVisitado != estaVisitado) {
+                notifyItemChanged(posicion)
+            }
+        }
+    }
+
     inner class PaisViewHolder(
         private val binding: ItemPaisBinding
     ) : RecyclerView.ViewHolder(binding.root) {
@@ -36,6 +50,23 @@ class PaisAdapter(
                 .fallback(R.drawable.ic_quiz)
                 .error(R.drawable.ic_quiz)
                 .into(binding.ivBandera)
+
+            val visitado = pais.codigo in codigosVisitados
+
+            val icono = if (visitado) {
+                android.R.drawable.star_big_on
+            } else {
+                android.R.drawable.star_big_off
+            }
+
+            val descripcion = if (visitado) {
+                R.string.estado_pais_visitado
+            } else {
+                R.string.estado_pais_no_visitado
+            }
+
+            binding.ivVisitado.setImageResource(icono)
+            binding.ivVisitado.contentDescription = binding.root.context.getString(descripcion)
 
             binding.root.setOnClickListener {
                 onPaisClick(pais)
@@ -63,6 +94,8 @@ class PaisAdapter(
         val pais = listaPaises[position]
         holder.mostrar(pais)
     }
+
+    private var codigosVisitados: Set<String> = emptySet()
 
     override fun getItemCount(): Int {
         return listaPaises.size

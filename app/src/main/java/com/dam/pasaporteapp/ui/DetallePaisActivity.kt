@@ -19,6 +19,7 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 import android.content.res.ColorStateList
+import android.content.Intent
 
 class DetallePaisActivity : AppCompatActivity() {
 
@@ -190,6 +191,14 @@ class DetallePaisActivity : AppCompatActivity() {
             getString(R.string.detalle_idiomas, textoOAlternativa(idiomas)),
             getString(R.string.detalle_monedas, textoOAlternativa(monedas))
         ).joinToString("\n")
+
+        binding.btnPlanificarViaje.setOnClickListener {
+            val intent = Intent(this, PlanificadorActivity::class.java)
+                .putExtra(PlanificadorActivity.EXTRA_NOMBRE, pais.name)
+                .putExtra(PlanificadorActivity.EXTRA_REGION, pais.region.orEmpty())
+
+            startActivity(intent)
+        }
     }
 
     private fun textoOAlternativa(texto: String?): String =

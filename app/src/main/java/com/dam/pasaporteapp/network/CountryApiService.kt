@@ -18,4 +18,9 @@ interface CountryApiService {
     suspend fun getCountryByCode(
         @Path("code") codigo: String
     ): CountryDetailResponse
+
+    @GET("independent/true")
+    suspend fun getIndependentCountries(
+        @Query("fields") fields: String = "alpha2Code,name,flags"
+    ): List<CountryResponse>
 }
